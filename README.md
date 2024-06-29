@@ -6,4 +6,4 @@ CVE-2021-43421,
 CVE-2017-16894,
 voyager laravel default admin,
 backpack laravel default admin and register,
-laravel register.
+laravel register and vebto exploit ( https://cxsecurity.com/issue/WLB-2023030045 )
