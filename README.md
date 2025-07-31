@@ -60,7 +60,7 @@ pip install -r requirements.txt
 ## 🚀 Usage
 
 ```bash
-python3 scan_laravel.py
+python3 lara.py
 ```
 
 ---
