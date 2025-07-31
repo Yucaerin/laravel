@@ -1,4 +1,4 @@
-# 🔍 Laravel Exposure Scanner 2025
+# 🔍 Laravel Scanner
 
 **Laravel Exposure Scanner 2025** is an automated tool to identify publicly exposed Laravel-based websites. It scans for `.env` leaks, debug mode exposure, accessible file managers, database credentials, and open phpMyAdmin panels.
 
