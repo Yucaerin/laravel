@@ -1,6 +1,6 @@
 # 🔍 Laravel Scanner
 
-**Laravel Exposure Scanner 2025** is an automated tool to identify publicly exposed Laravel-based websites. It scans for `.env` leaks, debug mode exposure, accessible file managers, database credentials, and open phpMyAdmin panels.
+**Laravel Scanner** is an automated tool to identify publicly exposed Laravel-based websites. It scans for `.env` leaks, debug mode exposure, accessible file managers, database credentials, and open phpMyAdmin panels.
 
 ---
 
@@ -49,7 +49,6 @@ pip install -r requirements.txt
 1. Loads targets from `list.txt`
 2. Verifies if each site is Laravel-powered:
    - Checks for `XSRF-TOKEN` cookie
-   - (Optional fallback: check `X-Powered-By`, `_token` field, etc.)
 3. If Laravel is detected:
    - Tries to access `.env` file and debug mode
    - If DB credentials are leaked → attempts remote login
@@ -91,6 +90,9 @@ mytarget.org
 > Forks, pull requests, and suggestions are welcome! 🔥
 
 ---
+
+
+> 🔄 **Note:** Feature additions may be implemented at any time.
 
 ## 📢 Disclaimer
 
