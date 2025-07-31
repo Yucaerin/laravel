@@ -104,7 +104,7 @@ def try_connect_db(host, user, password):
         conn.close()
         return True
     except Exception as e:
-        print(f"Gagal konek ke DB: {host} - {e}")
+        print(f"Failed to connect: {host} - {e}")
         return False
 
 def check_phpmyadmin(url, db_user, db_pass):
